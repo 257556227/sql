@@ -174,3 +174,75 @@ WHERE
 ```
 
 注意：这两条要求**需要不分顺序同时满足**，所以如果你想要先用规则 1 来筛选一遍数据，然后再用规则 2 来筛选，会得到错误的结果。
+
+### [185. 部门工资前三高的所有员工](https://leetcode.cn/problems/department-top-three-salaries/)
+
+找出公司里前 3 高的薪水，意思是不超过三个值比这些值大
+
+-- 解题的核心是两表自关联，算出工资比自己高的人有几个，工资比自己高的人数为0，自己就是第一名
+
+-- 工资比自己高的人有一个，自己是第二名，工资比自己高的人有两个自己就是第三名，所以取比自己工资高的人小于3就是取的前三名的人
+
+```mysql
+SELECT e1.Salary 
+FROM Employee AS e1
+WHERE 3 > 
+		(SELECT  count(DISTINCT e2.Salary) 
+		 FROM	Employee AS e2 
+	 	 WHERE	e1.Salary < e2.Salary 	AND e1.DepartmentId = e2.DepartmentId) ;
+```
+
+举个栗子：
+当 e1 = e2 = [4,5,6,7,8]
+
+e1.Salary = 4，e2.Salary 可以取值 [5,6,7,8]，count(DISTINCT e2.Salary) = 4
+
+e1.Salary = 5，e2.Salary 可以取值 [6,7,8]，count(DISTINCT e2.Salary) = 3
+
+e1.Salary = 6，e2.Salary 可以取值 [7,8]，count(DISTINCT e2.Salary) = 2
+
+e1.Salary = 7，e2.Salary 可以取值 [8]，count(DISTINCT e2.Salary) = 1
+
+e1.Salary = 8，e2.Salary 可以取值 []，count(DISTINCT e2.Salary) = 0
+
+最后 3 > count(DISTINCT e2.Salary)，所以 e1.Salary 可取值为 [6,7,8]，即集合前 3 高的薪水
+
+再把表 Department 和表 Employee 连接，获得各个部门工资前三高的员工。
+
+```mysql
+SELECT
+	Department.NAME AS Department, --取部门名称
+	e1.NAME AS Employee, --取员工姓名
+	e1.Salary AS Salary --取工资值
+FROM
+	Employee AS e1,Department --合并两张表
+WHERE
+	e1.DepartmentId = Department.Id --合并条件
+
+--从这里开始是筛选部门前三高的工资
+--筛选方法：从e2表里寻找在相同部门中比自身(e1表)更高的工资(值)，像这样的工资(值)一共不超过3个（即只有0,1,2个）
+
+	AND 3 > --不超过3个（即只有0,1,2个）
+            (SELECT  count( DISTINCT e2.Salary ) --像这样的工资(值)一共
+             FROM Employee AS e2 --从e2表里寻找
+             WHERE e1.Salary < e2.Salary --比自身(e1表)更高的工资(值)
+             AND e1.DepartmentId = e2.DepartmentId) --在相同部门中
+
+--筛选完成
+
+ORDER BY Department.NAME,Salary DESC; --根据部门、工资值倒序排序
+```
+
+或者开窗函数
+
+```mysql
+select Department, Employee, Salary
+from (
+    select d.name Department, ee.name Employee, ee.salary Salary, dense_rank() over(partition by departmentId order by salary desc) ranks
+    from Employee ee
+    left join Department d
+    on ee.departmentId = d.id
+) t
+where ranks <= 3
+```
+
