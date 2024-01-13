@@ -146,3 +146,53 @@ select ifnull((
 ) as SecondHighestSalary
 ```
 
+## [1484. 按日期分组销售产品](https://leetcode.cn/problems/group-sold-products-by-the-date/)
+
+group_concat([distinct] 要连接的字段 [order by 排序字段] [separator '分隔符'])
+
+另外，因为是“销售的不同产品的数量”所以要加distinct
+
+```mysql
+select
+    sell_date,
+    count(distinct product) num_sold,
+    group_concat(
+        distinct product
+        order by product
+        separator ','
+    ) products
+from 
+    Activities
+group by sell_date
+order by sell_date
+```
+
+## [1327. 列出指定时间段内所有的下单产品](https://leetcode.cn/problems/list-the-products-ordered-in-a-period/)
+
+```mysql
+select p.product_name, sum(o.unit) unit
+from Orders o inner join Products p
+on o.product_id = p.product_id
+where to_char(o.order_date, 'yyyy-mm') = '2020-02'
+group by o.product_id
+having sum(o.unit) >= 100
+```
+
+## [1517. 查找拥有有效邮箱的用户](https://leetcode.cn/problems/find-users-with-valid-e-mails/)
+
+- ^：表示一个字符串或行的开头
+- [a-z]：表示一个字符范围，匹配从 a 到 z 的任何字符。
+- [0-9]：表示一个字符范围，匹配从 0 到 9 的任何字符。
+- [a-zA-Z]：这个变量匹配从 a 到 z 或 A 到 Z 的任何字符。请注意，你可以在方括号内指定的字符范围的数量没有限制，您可以添加想要匹配的其他字符或范围。
+- [^a-z]：这个变量匹配不在 a 到 z 范围内的任何字符。请注意，字符 ^ 用来否定字符范围，它在方括号内的含义与它的方括号外表示开始的含义不同。
+- [a-z]*：表示一个字符范围，匹配从 a 到 z 的任何字符 0 次或多次。
+- [a-z]+：表示一个字符范围，匹配从 a 到 z 的任何字符 1 次或多次。
+- . ：匹配任意一个字符。
+- \\. ：表示句号。请注意，反斜杠用于转义句点字符，因为句点字符在正则表达式中具有特殊含义。还要注意，在许多语言中，你需要转义反斜杠本身，因此需要使用双斜杠\\\\.。
+- $：表示一个字符串或行的结尾。
+
+```mysql
+select * from Users
+where mail REGEXP '^[a-zA-Z][a-zA-Z0-9_./-]*\\@leetcode\\.com$'
+```
+
